@@ -32,13 +32,13 @@ class Music:
         self.artist = artist
         if lyric is None:
             try:
-                lyric = ply.get_song_lyrics(artist,music)
+                lyric = ply.get_song_lyrics(re.sub('[^A-Za-z0-9]+',' ', artist.replace('-','')),re.sub('[^A-Za-z0-9]+',' ', music))
             except ValueError:
-                print("Couldn't Retrieve Lyrics for {%s} - {%s}" % (artist,music))
-                quit(-9)
+                #print("Couldn't Retrieve Lyrics for {%s} - {%s}" % (artist,music))
+                lyric = "NotFound"
         if not lyric:
-            print("Couldn't Retrieve Lyrics for {%s} - {%s}" % (artist, music))
-            quit(-9)
+            #print("Couldn't Retrieve Lyrics for {%s} - {%s}" % (artist, music))
+            lyric = "NotFound"
         self.lyrics = Lyric(lyric)
 
     def remove_word_from_lyric(self,word):
@@ -100,7 +100,8 @@ class GraphicalWriter:
         if not self.color_encoder:
             self.color_encoder = ColorEncoder(lyrics_list)
 
-        img_name = "%s_%s.jpeg" % (self.music.artist,self.music.music)
+        img_name = "Results/Images/%s_%s.jpeg" % (re.sub('[^A-Za-z0-9]+','', self.music.artist),re.sub('[^A-Za-z0-9]+','', self.music.music))
+        img_name = img_name.replace('?','')
         im = Image.new('RGB',(len(lyrics_list), len(lyrics_list)),"black")
 
         pixels = im.load()
@@ -110,12 +111,23 @@ class GraphicalWriter:
                 if lyrics_list[i] == lyrics_list[j]:
                     pixels[i,j] = self.color_encoder.color(lyrics_list[i])
 
-        im = im.resize((5*len(lyrics_list), 5*len(lyrics_list)),resample=Image.BICUBIC)
+        resizingScale = 1
+        if len(lyrics_list) < 1500:
+            resizingScale = np.round(1500/len(lyrics_list))
 
-        enh = ImageEnhance.Contrast(im)
-        im = enh.enhance(1.3)
-        enh = ImageEnhance.Sharpness(im)
-        im = enh.enhance(1.3)
+        im = im.resize((resizingScale*len(lyrics_list), resizingScale*len(lyrics_list)),resample=Image.BICUBIC)
+
+        try:
+            enh = ImageEnhance.Contrast(im)
+            im = enh.enhance(1.3)
+        except MemoryError:
+            print(__name__, " [Memory Error]: ",self.music.artist,"-",self.music.music)
+
+        try:
+            enh = ImageEnhance.Sharpness(im)
+            im = enh.enhance(1.3)
+        except MemoryError:
+            print(__name__, " [Memory Error]: ",self.music.artist,"-",self.music.music)
 
         im.save(img_name,"JPEG")
 
