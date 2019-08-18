@@ -113,7 +113,7 @@ class GraphicalWriter:
 
         resizingScale = 1
         if len(lyrics_list) < 1500:
-            resizingScale = np.round(1500/len(lyrics_list))
+            resizingScale = int(np.round(1500/len(lyrics_list)))
 
         im = im.resize((resizingScale*len(lyrics_list), resizingScale*len(lyrics_list)),resample=Image.BICUBIC)
 
