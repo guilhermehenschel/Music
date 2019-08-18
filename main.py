@@ -9,6 +9,8 @@ def load_stop_words():
     return list
 
 list_of_music = [
+    ("Goldroom","Silhouette"),
+    ("Motörhead","Ace of Spades")
     #("Dream Theater", "Glass Prison"),
     #("Dream Theater", "Pull Me Under"),
     #("Michael Jackson", "Bad"),
