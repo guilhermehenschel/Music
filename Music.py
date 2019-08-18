@@ -3,6 +3,7 @@ import pylyrics3 as ply
 from PIL import Image, ImageEnhance
 import random
 import numpy as np
+import unidecode
 
 
 def get_spaced_colors(n):
@@ -17,22 +18,23 @@ class Lyric:
         self.lyric_as_is = str(lyric_str)
         self.lyric_as_list = re.split(r'\. |, |\* |\n |\t |! |\? |; |: |¡ |\( |\) | ', lyric_str)
         self.lyric_as_list = [x.lower() for x in self.lyric_as_list]
+        self.lyric_as_list = list(filter(lambda a : a != '', self.lyric_as_list ))
 
     def lyrics_as_list(self):
         return self.lyric_as_list.copy()
 
     def remove_word_from_lyric(self,word):
         if word in self.lyric_as_list:
-            self.lyric_as_list.remove(word)
+            self.lyric_as_list = list(filter(lambda a : a != word, self.lyric_as_list ))
 
 
 class Music:
     def __init__(self,artist,music,lyric=None):
-        self.music = music
-        self.artist = artist
+        self.music = unidecode.unidecode(music)
+        self.artist = unidecode.unidecode(artist)
         if lyric is None:
             try:
-                lyric = ply.get_song_lyrics(re.sub('[^A-Za-z0-9]+',' ', artist.replace('-','')),re.sub('[^A-Za-z0-9]+',' ', music))
+                lyric = ply.get_song_lyrics(re.sub('[^A-Za-z0-9]+',' ', self.artist.replace('-','')),re.sub('[^A-Za-z0-9]+',' ', self.music))
             except ValueError:
                 #print("Couldn't Retrieve Lyrics for {%s} - {%s}" % (artist,music))
                 lyric = "NotFound"
