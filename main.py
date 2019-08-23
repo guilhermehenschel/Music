@@ -6,6 +6,7 @@ import chart_studio.plotly as plt
 import plotly.express as plx
 import plotly.graph_objs as go
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot
+import datetime as dt
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -42,6 +43,7 @@ def routine():
 
     file = pd.read_csv("Data/SpotifyFeatures.csv")
     file_frame = pd.DataFrame(file)
+    # file_frame = file_frame.drop(labels=0)
     with open("Results/describe.txt",'w') as desc_file:
         desc_file.write(str(file_frame.describe(include='all')))
 
@@ -97,14 +99,7 @@ def routine():
     #         std_dev = file_frame[key].std()
     #         print(key, ':', (np.sum(np.abs(file_frame[key]) > 3.0*std_dev)))
 
-    normalized_frame = file_frame.copy()
-    for key in normalized_frame.keys():
-        if normalized_frame[key].dtype != 'object':
-            # normalized_frame[key] = (normalized_frame[key] - normalized_frame[key].min())/(normalized_frame[key].max() - normalized_frame[key].min())
-            normalized_frame[key] = (normalized_frame[key] - normalized_frame[key].mean())/normalized_frame[key].std()
 
-    with open("Results/describe_post_transform.txt",'w') as file:
-        file.write(str(normalized_frame.describe(include='all')))
 
     baseName = ''''"Spotify Tracks DB - Music database (232k tracks) key, mode and time signature are cleaned"'''
     baseLink = '''"https://www.kaggle.com/zaheenhamidani/ultimate-spotify-tracks-db/"'''
@@ -121,7 +116,7 @@ def routine():
         <body>'''
 
     capa = '''
-        <div>
+        <div align=center>
             <h5>Potificia Universidade Católica do Paraná</h5>
             <h5>Escola Politécnica</h5>
             <h5>Ciência de Dados</h5>
@@ -132,8 +127,36 @@ def routine():
             <br />
             <br />
             <br /> 
-            <h5> Guilherme Gustavo Henschel </h5>
-        </div> 
+            <br />
+            <h5 text-align=right> Guilherme Gustavo Henschel </h5>
+        </div> '''
+
+    sumario = '''
+        <hr />
+        <div>
+        <h2 id="top">Sumário</h2>
+        <ol>
+        <li><a href="Report.html"> Descrição da base de Dados </a></li>
+            <ol>
+                <li><a href="Report1.html#classes"> Distribuição de Classes </a></li>
+            </ol>
+        <li><a href="Report2.html"> Descrição Estatistica de Dados </a>
+            <ol>
+                <li><a href="Report2.html#parallel"> Grafico de Coordenadas Paralelas </a></li>
+                <li><a href="Report2.html#correl"> Correlações </a></li>
+                <li><a href="Report2.html#outliers"> Outliers </a></li>
+                <li><a href="Report2.html#conclusion"> Conclusões Parciais </a></li>
+            </ol>
+        </li>
+        <li><a href="Report3.html"> Transformação da Base </a>
+            <ol>
+                <li><a href="Report3.html#parallel"> Grafico de Coordenadas Paralelas </a></li>
+                <li><a href="Report3.html#outliers"> Outliers </a></li>
+                <li><a href="Report3.html#conclusion"> Conclusões Parciais </a></li>
+            </ol>
+        </li>
+        </ol>
+        <div>
     '''
 
     databaseDescription = '''
@@ -180,9 +203,12 @@ def routine():
             <br/>
             <i>Não foram encontradas Publicações originais que utilizaram essa base</i>
             <br/>
-            <h3>Exemplos Para classificação</h3>
+            <h3 id="classes">Exemplos Para classificação</h3>
             ''' + genres_Pie_plot + '''
             <br />
+            <div align=center>
+            <a href="Report2.html" >Proxima Pagina</a>
+            </div>
         </div>
     '''
 
@@ -211,21 +237,6 @@ def routine():
                            include_plotlyjs=False,
                            output_type='div'
                            )
-
-    box1 = plx.box(file_frame, y='popularity',color='genre')
-    box2 = plx.box(file_frame, y='duration_ms', color='genre')
-
-    boxPlot = plot(box1,
-                    config={"displayModeBar": True},
-                    show_link=False,
-                    include_plotlyjs=False,
-                    output_type='div'
-                    ) + plot(box2,
-                    config={"displayModeBar": True},
-                    show_link=False,
-                    include_plotlyjs=False,
-                    output_type='div'
-                    )
 
     paralallelCoord = plx.parallel_coordinates(file_frame,color='popularity',color_continuous_scale=plx.colors.diverging.Geyser)
     paralallelCat = plx.parallel_categories(file_frame, dimensions=['genre','key','mode','time_signature'] ,color='popularity',color_continuous_scale=plx.colors.diverging.Geyser)
@@ -256,22 +267,35 @@ def routine():
                     output_type='div'
                     )
 
+    outliers = ""
+
+    for key in file_frame.keys():
+        if file_frame[key].dtype != "object":
+            n_outlier = sum(np.array(np.abs(file_frame[key] - file_frame[key].mean()) > 3*file_frame[key].std()))
+            p_outliers = n_outlier/file_frame[key].count()
+            outliers +="<li><b>" +str(key) + ":</b>  " + str(n_outlier) + "<i>( "+ "{:.5f}%".format(p_outliers) +")</i></li>\n"
+
+
+    boxPlot = ""
+
+    for key in file_frame.keys():
+        if file_frame[key].dtype != "object":
+            box = plx.box(file_frame, y=key, color='genre')
+            boxPlot += plot(box,
+                   config={"displayModeBar": True},
+                   show_link=False,
+                   include_plotlyjs=False,
+                   output_type='div')
+
     estatiscalDescription = '''
         <div>
             <h1>Estatisticas</h1>
             <h3>Dataframe</h3>
             ''' + str(file_frame.describe(include="all").to_html()) + '''
-            <h2>Graficos Estatisticos</h2>
-            <h4>Scatter Matrix</h4>
-            ''' + scatterMatrixPlot + '''
-            <br/>
-            <h4>Bar Plot</h4>
-            ''' + boxPlot + '''
-            <br />
-            <h4>Parallel Coordinates</h4>
+            <h3 id="parallel">Parallel Coordinates</h3>
             ''' + paralallelPlot + '''
             <br />
-            <h2>Correlações</h2>
+            <h2 id="correl">Correlações</h2>
             <p><b>Correlações Notáveis:</b>
             <p><i>Nota: Consideravel notável qualquer correlação com valor absoluto maior que 0.70</i>
             <ul>
@@ -286,11 +310,40 @@ def routine():
             ''' + str(file_frame.corr(method='spearman').to_html()) + '''
             <h4>Scatter Plot</h4>
             ''' + scatterPlot + '''
+            <h4 id="outliers">Outliers</h4>
+            <p><i>Foi utilizado 3 desvios padrões para determinar o numero de outliers de cada variavel</i>
+            <ul>
+            ''' + outliers + '''
+            </ul>
+            <h4>Box plot</h4>
+            ''' + boxPlot + '''
+            <br />
+            <h4 id="conclusion">Conclusões</h4>
+            <p>Devido ao genero 'Comedy' liveness and speechiness não tem seus outliers removidos, ou temos o risco de remover mais de 75% das amostras desse genero.</p>
         </div>
-        <a href="Report2.html" >Proxima Pagina</a>
+        <div align=center>
+            <a href="Report3.html" >Proxima Pagina</a>
+        </div>
     '''
 
+
     normalized_frame = file_frame.copy()
+    outliersKey = ['duration_ms', 'loudness', 'tempo', 'popularity']
+
+    errosMean = "<ol>"
+    errosStd = "<ol>"
+
+    for key in outliersKey:
+        key_std = normalized_frame[key].std()
+        key_mean = normalized_frame[key].mean()
+        normalized_frame[key] = normalized_frame[key].mask(np.absolute(normalized_frame[key]-key_mean) > 3*key_std, key_mean)
+        errosMean += "<li><b>"+key+"</b>: "+ "{:.5f}".format(key_mean - normalized_frame[key].mean())+"<i>   ("+"{:.5f}%".format((key_mean - normalized_frame[key].mean())/key_mean)+")</i>"
+        errosStd += "<li><b>" + key + "</b>: " + "{:.5f}".format(key_std - normalized_frame[key].std()) + "<i>   (" + "{:.5f}%".format((key_std - normalized_frame[key].std()) / key_std) + ")</i>"
+
+
+    errosMean += "</ol>"
+    errosStd += "</ol>"
+
     for key in normalized_frame.keys():
         if normalized_frame[key].dtype != 'object':
             normalized_frame[key] = (normalized_frame[key] - normalized_frame[key].min())/(normalized_frame[key].max() - normalized_frame[key].min())
@@ -330,90 +383,116 @@ def routine():
         <div>
             <h2>Normalização da Base</h2>
             <h4>Dataframe</h4>
-            ''' + str(normalized_frame.describe().to_html()) + ''''
-            <h4>Coordenadas Paralelas</h4>
+            ''' + str(normalized_frame.describe().to_html()) + '''
+            <h4 id="parallel">Coordenadas Paralelas</h4>
              ''' + paralallelPlot + '''
-            <h4>Outliers</h4>
+            <h4 id="outliers">Outliers</h4>
             <p><i>Foi utilizado 3 desvios padrões para determinar o numero de outliers de cada variavel</i>
             <ul>
             ''' + outliers + '''
             </ul>
             <h4>Box plot</h4>
             ''' + boxPlot + '''
+            <br />
+            <h3 id="conclusion">Conclusões</h3>
+            <p> Mesmo com a remoção dos Outliers em Loudness ainda existem aproximadamente 3.400 outliers para o atributo após normalização.
+            <h4>Erros Por Remoção de Outliers</h4>
+            <i>Houve um desvio de média e desvio padrão para cada um dos atributos com outliers removidos</i>
+            <ul><li> Média : 
+            ''' + errosMean + '''
+            </li>
+            <li>Desvio Padrão:
+            ''' + errosStd + '''
+            </li>
         </div>
     '''
 
+    otherNecessities = '''
+        <div>
+            
+        </div>
+    
+    '''
 
-
-    bottom = '''</body>
+    bottom = '''
+            <div align="center">
+                <a href="#top">Ir ao Sumário</a>
+            </div>
+        </body>
     </html>
     '''
 
-
-
     with open("Results/Report.html", 'w') as htmlReport:
-        htmlReport.writelines([head,capa,databaseDescription,estatiscalDescription,bottom])
+        htmlReport.writelines([head,capa,sumario,databaseDescription,bottom])
 
     with open("Results/Report2.html", 'w') as htmlReport:
-        htmlReport.writelines([head, baseTransform, bottom])
-
-    lyrics = []
-
-    for index, row in file_frame.iterrows():
-        artist = row['artist_name']
-        title = row['track_name']
-        test1 = msc.Music(artist, title)
-        for word in load_stop_words():
-            test1.remove_word_from_lyric(word)
-
-        if test1.lyrics.lyric_as_is != "" and test1.lyrics.lyric_as_is != 'NotFound' and EXPORT_GRAFIC_ANALISIS:
-            gw = msc.GraphicalWriter(test1)
-            gw.create_grafical_representation()
-
-        lyrics.append(test1.lyrics.lyric_as_is)
-
-    file_frame['lyrics'] = pd.Series(lyrics)
-    file_frame.to_csv("Data/WithLyrics.csv")
-
-    with open("Results/describe2.txt", 'w') as desc_file:
-        desc_file.write(str(file_frame.describe(include='all')))
-
-    file_frame.describe(include='all').to_latex("Results/new_file.tex")
-
-    from wordcloud import WordCloud, STOPWORDS
-
-    comment_words = ' '
-    stopwords = set(STOPWORDS)
-
-    # iterate through the csv file
-    for val in file_frame['lyrics'].CONTENT:
-
-        # typecaste each val to string
-        val = str(val)
-
-        # split the value
-        tokens = val.split()
-
-        # Converts each token into lowercase
-        for i in range(len(tokens)):
-            tokens[i] = tokens[i].lower()
-
-        for words in tokens:
-            comment_words = comment_words + words + ' '
-
-    wordcloud = WordCloud(width=800, height=800,
-                          background_color='white',
-                          stopwords=stopwords,
-                          min_font_size=10).generate(comment_words)
-
-    wordcloud.to_file("Results/WordCloud.jpeg")
-
-    lyrcs_report = '''
-        
-    '''
+        htmlReport.writelines([head,sumario,estatiscalDescription, bottom])
 
     with open("Results/Report3.html", 'w') as htmlReport:
-        htmlReport.writelines([head,lyrcs_report , bottom])
+        htmlReport.writelines([head,sumario, baseTransform, bottom])
+
+    with open("Results/Report4.html","w") as htmlReport:
+        htmlReport.writelines([head, sumario, baseTransform, bottom])
+    # lyrics = []
+    #
+    # for index, row in file_frame.iterrows():
+    #     artist = row['artist_name']
+    #     title = row['track_name']
+    #     test1 = msc.Music(artist, title)
+    #     for word in load_stop_words():
+    #         test1.remove_word_from_lyric(word)
+    #
+    #     if test1.lyrics.lyric_as_is != "" and test1.lyrics.lyric_as_is != 'NotFound' and EXPORT_GRAFIC_ANALISIS:
+    #         gw = msc.GraphicalWriter(test1)
+    #         gw.create_grafical_representation()
+    #
+    #     lyrics.append(test1.lyrics.lyric_as_is)
+    #
+    #     if int(index)%100 == 0 :
+    #         print(str(dt.datetime.now()),": - Done: ",int(index)," of ",232000)
+    #
+    # file_frame['lyrics'] = pd.Series(lyrics)
+    # file_frame.to_csv("Data/WithLyrics.csv")
+
+    # with open("Results/describe2.txt", 'w') as desc_file:
+    #     desc_file.write(str(file_frame.describe(include='all')))
+    #
+    # file_frame.describe(include='all').to_latex("Results/new_file.tex")
+    #
+    # from wordcloud import WordCloud, STOPWORDS
+    #
+    # comment_words = ' '
+    # stopwords = set(STOPWORDS)
+    #
+    # # iterate through the csv file
+    # for val in file_frame['lyrics'].CONTENT:
+    #
+    #     # typecaste each val to string
+    #     val = str(val)
+    #
+    #     # split the value
+    #     tokens = val.split()
+    #
+    #     # Converts each token into lowercase
+    #     for i in range(len(tokens)):
+    #         tokens[i] = tokens[i].lower()
+    #
+    #     for words in tokens:
+    #         comment_words = comment_words + words + ' '
+    #
+    # wordcloud = WordCloud(width=800, height=800,
+    #                       background_color='white',
+    #                       stopwords=stopwords,
+    #                       min_font_size=10).generate(comment_words)
+    #
+    # wordcloud.to_file("Results/WordCloud.jpeg")
+
+    # lyrcs_report = '''
+    #
+    # '''
+    #
+    # with open("Results/Report4.html", 'w') as htmlReport:
+    #     htmlReport.writelines([head,lyrcs_report , bottom])
 
 if __name__ == '__main__':
     routine()

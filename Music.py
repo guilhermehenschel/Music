@@ -16,7 +16,7 @@ def get_spaced_colors(n):
 class Lyric:
     def __init__(self,lyric_str):
         self.lyric_as_is = str(lyric_str)
-        self.lyric_as_list = re.split(r'\. |, |\* |\n |\t |! |\? |; |: |¡ |\( |\) | ', lyric_str)
+        self.lyric_as_list = re.split(r'\. |, |\* |\n |\t |! |\? |; |: |¡ |\( |\) | ', str(lyric_str))
         self.lyric_as_list = [x.lower() for x in self.lyric_as_list]
         self.lyric_as_list = list(filter(lambda a : a != '', self.lyric_as_list ))
 
@@ -34,7 +34,7 @@ class Music:
         self.artist = unidecode.unidecode(artist)
         if lyric is None:
             try:
-                lyric = ply.get_song_lyrics(re.sub('[^A-Za-z0-9]+',' ', self.artist.replace('-','')),re.sub('[^A-Za-z0-9]+',' ', self.music))
+                lyric = ply.get_song_lyrics(re.sub('[^A-Za-z0-9]+',' ', self.artist.replace('-','').replace('\'','')),re.sub('[^A-Za-z0-9]+',' ', self.music.replace('\'','')))
             except ValueError:
                 #print("Couldn't Retrieve Lyrics for {%s} - {%s}" % (artist,music))
                 lyric = "NotFound"
